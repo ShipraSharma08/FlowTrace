@@ -16,48 +16,60 @@ def capture_interfaces():
 
 @router.get("/capture/start")
 def start_capture():
-    packet = sniff(count=1)
 
-    print(packet[0].summary())
+    packets = sniff(count=10)
 
-    if packet[0].haslayer(IP):
-        print("IPv4 Packet")
-        print("Source IP :", packet[0][IP].src)
-        print("Destination IP :", packet[0][IP].dst)
+    for pkt in packets:
 
-    elif packet[0].haslayer(IPv6):
-        print("IPv6 Packet")
-        print("Source IP :", packet[0][IPv6].src)
-        print("Destination IP :", packet[0][IPv6].dst)
+        print("=" * 60)
+        print(pkt.summary())
 
-    if packet[0].haslayer(TCP):
-        print("TCP Packet")
-        print("Source Port :", packet[0][TCP].sport)
-        print("Destination Port :", packet[0][TCP].dport)
-        print("TCP Flags :", packet[0][TCP].flags)
+        # ---------------- IPv4 ----------------
+        if pkt.haslayer(IP):
+            print("IPv4 Packet")
+            print("Source IP :", pkt[IP].src)
+            print("Destination IP :", pkt[IP].dst)
 
-        flags = str(packet[0][TCP].flags)
+        # ---------------- IPv6 ----------------
+        elif pkt.haslayer(IPv6):
+            print("IPv6 Packet")
+            print("Source IP :", pkt[IPv6].src)
+            print("Destination IP :", pkt[IPv6].dst)
 
-        flag_meanings = {
-            "S": "Connection Request (SYN)",
-            "SA": "Connection Accepted (SYN-ACK)",
-            "A": "Connection Established (ACK)",
-            "PA": "Data Transfer (PSH-ACK)",
-            "FA": "Connection Closing (FIN-ACK)",
-            "RA": "Connection Reset (RST-ACK)"
-        }
+        # ---------------- TCP ----------------
+        if pkt.haslayer(TCP):
 
-        if flags in flag_meanings:
-            print(flag_meanings[flags])
-        else:
-            print("Unknown TCP Flag")
+            print("TCP Packet")
+            print("Source Port :", pkt[TCP].sport)
+            print("Destination Port :", pkt[TCP].dport)
 
-        print("Sequence Number :", packet[0][TCP].seq)
-        print("Acknowledgement Number :", packet[0][TCP].ack)
-        print("Window Size :", packet[0][TCP].window)
-        print("Packet Length :", len(packet[0]), "Bytes")
+            print("TCP Flags :", pkt[TCP].flags)
+
+            flags = str(pkt[TCP].flags)
+
+            flag_meanings = {
+                "S": "Connection Request (SYN)",
+                "SA": "Connection Accepted (SYN-ACK)",
+                "A": "Connection Established (ACK)",
+                "PA": "Data Transfer (PSH-ACK)",
+                "FA": "Connection Closing (FIN-ACK)",
+                "R": "Connection Reset (RST)",
+                "RA": "Connection Reset + ACK",
+                "F": "Connection Closing (FIN)"
+            }
+
+            if flags in flag_meanings:
+                print(flag_meanings[flags])
+            else:
+                print("Unknown TCP Flag")
+
+            print("Sequence Number :", pkt[TCP].seq)
+            print("Acknowledgement Number :", pkt[TCP].ack)
+            print("Window Size :", pkt[TCP].window)
+
+        print("Packet Length :", len(pkt), "Bytes")
         print("Capture Time :", datetime.now())
 
     return {
-        "message": "1 packet captured"
+        "message": "10 packets captured successfully"
     }
