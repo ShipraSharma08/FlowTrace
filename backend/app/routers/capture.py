@@ -40,12 +40,17 @@ def process_packet(packet):
     destination_port = packet[TCP].dport
     packet_size = len(packet)
     tcp_flags = decode_tcp_flags(packet[TCP].sprintf("%TCP.flags%"))
+    endpoints = sorted([
+    (source_ip, source_port),
+    (destination_ip, destination_port)
+])
+
     session_key = (
-        source_ip,
-        source_port,
-        destination_ip,
-        destination_port
-    )
+    endpoints[0][0],
+    endpoints[0][1],
+    endpoints[1][0],
+    endpoints[1][1]
+)
     if session_key not in sessions:
         sessions[session_key] = {
                 "packet_count": 1,
@@ -53,6 +58,7 @@ def process_packet(packet):
                 "start_time": datetime.now(),
                 "last_seen": datetime.now(),
                 "state": "NEW",
+                "handshake_complete": False,
                 "tcp_flags": tcp_flags,
                 "flag_history": [tcp_flags]
         }
@@ -64,6 +70,11 @@ def process_packet(packet):
         sessions[session_key]["tcp_flags"] = tcp_flags
         if sessions[session_key]["flag_history"][-1] != tcp_flags:
             sessions[session_key]["flag_history"].append(tcp_flags)
+        history = sessions[session_key]["flag_history"]
+        if len(history) >= 3:
+            if history[-3:] == ["SYN", "SYN-ACK", "ACK"]:
+                sessions[session_key]["handshake_complete"] = True
+                sessions[session_key]["state"] = "ESTABLISHED"
 @router.get("/start")
 def start_capture():
             sniff(
@@ -79,11 +90,17 @@ def get_flows():
     flows = []
     for key, value in sessions.items():
         src_ip, src_port, dst_ip, dst_port = key
+        duration = (value["last_seen"] - value["start_time"]).total_seconds()
+        duration = round(duration, 2)
+        idle_time = (datetime.now() - value["last_seen"]).total_seconds()
+        status = "ACTIVE" if idle_time <= 5 else "IDLE"
         flows.append({
             "source_ip": src_ip,
             "source_port": src_port,
             "destination_ip": dst_ip,
             "destination_port": dst_port,
+            "duration_seconds": duration,
+            "status": status,
             **value
         })
     return flows
