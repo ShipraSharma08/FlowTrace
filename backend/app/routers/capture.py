@@ -27,6 +27,7 @@ def process_packet(packet):
     source_port = packet[TCP].sport
     destination_port = packet[TCP].dport
     packet_size = len(packet)
+    tcp_flags = packet[TCP].sprintf("%TCP.flags%")
     session_key = (
         source_ip,
         source_port,
@@ -40,12 +41,14 @@ def process_packet(packet):
                 "start_time": datetime.now(),
                 "last_seen": datetime.now(),
                 "state": "NEW",
+                "tcp_flags": tcp_flags
         }
     else:
 
         sessions[session_key]["packet_count"] += 1
         sessions[session_key]["total_bytes"] += packet_size
         sessions[session_key]["last_seen"] = datetime.now()
+        sessions[session_key]["tcp_flags"] = tcp_flags
 @router.get("/start")
 def start_capture():
             sniff(
