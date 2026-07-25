@@ -1,22 +1,17 @@
-
-
 from fastapi import FastAPI
-from backend.app.routers import health, interfaces, capture
 
-app = FastAPI(
-    title="FlowTrace API",
-    version="1.0.0"
-)
+from app.routers import health
+from app.routers import capture
+from app.database import database
+
+app = FastAPI(title="FlowTrace")
+
+app.include_router(health.router)
+app.include_router(capture.router)
 
 
 @app.get("/")
-def home():
+def root():
     return {
-        "project": "FlowTrace",
-        "status": "Running"
+        "message": "Welcome to FlowTrace"
     }
-
-
-app.include_router(health.router)
-app.include_router(interfaces.router)
-app.include_router(capture.router)
