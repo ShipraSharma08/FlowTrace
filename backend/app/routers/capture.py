@@ -53,7 +53,8 @@ def process_packet(packet):
                 "start_time": datetime.now(),
                 "last_seen": datetime.now(),
                 "state": "NEW",
-                "tcp_flags": tcp_flags
+                "tcp_flags": tcp_flags,
+                "flag_history": [tcp_flags]
         }
     else:
 
@@ -61,6 +62,8 @@ def process_packet(packet):
         sessions[session_key]["total_bytes"] += packet_size
         sessions[session_key]["last_seen"] = datetime.now()
         sessions[session_key]["tcp_flags"] = tcp_flags
+        if sessions[session_key]["flag_history"][-1] != tcp_flags:
+            sessions[session_key]["flag_history"].append(tcp_flags)
 @router.get("/start")
 def start_capture():
             sniff(
