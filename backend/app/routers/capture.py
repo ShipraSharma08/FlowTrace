@@ -11,6 +11,18 @@ router = APIRouter(
 )
 
 sessions = {}
+def decode_tcp_flags(flags):
+
+    flag_map = {
+        "S": "SYN",
+        "SA": "SYN-ACK",
+        "A": "ACK",
+        "FA": "FIN-ACK",
+        "PA": "PSH-ACK",
+        "R": "RST"
+    }
+
+    return flag_map.get(flags, flags)
 
 def process_packet(packet):
     if TCP not in packet:
@@ -27,7 +39,7 @@ def process_packet(packet):
     source_port = packet[TCP].sport
     destination_port = packet[TCP].dport
     packet_size = len(packet)
-    tcp_flags = packet[TCP].sprintf("%TCP.flags%")
+    tcp_flags = decode_tcp_flags(packet[TCP].sprintf("%TCP.flags%"))
     session_key = (
         source_ip,
         source_port,
