@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from scapy.all import sniff, get_if_list
-from scapy.layers.inet import IP, TCP
+from scapy.layers.inet import IP, TCP, UDP, ICMP
 from scapy.layers.inet6 import IPv6
 from datetime import datetime
 
@@ -25,7 +25,7 @@ def decode_tcp_flags(flags):
     return flag_map.get(flags, flags)
 
 def process_packet(packet):
-    if TCP not in packet:
+    if IP not in packet and IPv6 not in packet:
         return
     if IP in packet:
         source_ip = packet[IP].src
@@ -36,21 +36,29 @@ def process_packet(packet):
         destination_ip = packet[IPv6].dst
     else:
         return
-    source_port = packet[TCP].sport
-    destination_port = packet[TCP].dport
+    if ICMP in packet:
+        source_port = 0
+        destination_port = 0
+    elif TCP in packet:
+        source_port = packet[TCP].sport
+        destination_port = packet[TCP].dport
+    elif UDP in packet:
+        source_port = packet[UDP].sport
+        destination_port = packet[UDP].dport
+    
     packet_size = len(packet)
-    tcp_flags = decode_tcp_flags(packet[TCP].sprintf("%TCP.flags%"))
+    tcp_flags = decode_tcp_flags(packet[TCP].sprintf("%TCP.flags%")) if TCP in packet else []
     endpoints = sorted([
-    (source_ip, source_port),
-    (destination_ip, destination_port)
-])
+        (source_ip, source_port),
+        (destination_ip, destination_port)
+    ])
 
     session_key = (
-    endpoints[0][0],
-    endpoints[0][1],
-    endpoints[1][0],
-    endpoints[1][1]
-)
+        endpoints[0][0],
+        endpoints[0][1],
+        endpoints[1][0],
+        endpoints[1][1]
+    )
     if session_key not in sessions:
         sessions[session_key] = {
                 "packet_count": 1,
@@ -60,7 +68,8 @@ def process_packet(packet):
                 "state": "NEW",
                 "handshake_complete": False,
                 "tcp_flags": tcp_flags,
-                "flag_history": [tcp_flags]
+                "flag_history": [tcp_flags],
+                "protocol": "ICMP" if ICMP in packet else "TCP" if TCP in packet else "UDP",
         }
     else:
 
@@ -80,10 +89,10 @@ def start_capture():
             sniff(
                 prn=process_packet,
                 store=False,
-                filter="tcp",
+                filter="tcp or udp or icmp",
                 count=20
             )
-            return {"message": "Captured 20 TCP packets successfully"}
+            return {"message": "Captured 20 packets successfully"}
 
 @router.get("/flows")
 def get_flows():
@@ -119,6 +128,21 @@ def get_top_talkers():
             talkers[destination_ip] = 0
         talkers[destination_ip] += value["packet_count"]
     return talkers
+@router.get("/protocol-stats")
+def get_protocol_stats():
+    protocols = {
+         "TCP": 0,
+         "UDP": 0,
+         "ICMP": 0,
+         "Others": 0
+        }
+    for key, value in sessions.items():
+        protocol = value["protocol"]
+        protocols[protocol] += 1
+    return protocols
+
+
+
  
  
     
