@@ -116,7 +116,28 @@ uvicorn app.main:app --reload
 - PCAP File Support
 ## 📸 Project Screenshots
 
-> Screenshots will be added after the frontend dashboard is completed.
+> Screenshots will be added after the frontend completed.
+## 📸 Project Screenshots
+
+### Swagger UI
+
+![Swagger UI](assets/screenshots/swagger-home.png)
+
+### Capture API
+
+![Capture API](assets/screenshots/capture-start.png)
+
+### Flow Sessions
+
+![Flow Sessions](assets/screenshots/flows-api.png)
+
+### Protocol Statistics
+
+![Protocol Statistics](assets/screenshots/protocol-stats.png)
+
+### Top Talkers
+
+![Top Talkers](assets/screenshots/top-talkers.png)
 
 ### Current Backend
 
