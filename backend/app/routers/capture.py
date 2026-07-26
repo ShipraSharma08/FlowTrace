@@ -104,6 +104,21 @@ def get_flows():
             **value
         })
     return flows
+
+@router.get("/top-talkers")
+def get_top_talkers():
+    talkers = {}
+
+    for key, value in sessions.items():
+        source_ip = key[0]
+        destination_ip = key[2]
+        if source_ip not in talkers:
+            talkers[source_ip] = 0
+        talkers[source_ip] += value["packet_count"]
+        if destination_ip not in talkers:
+            talkers[destination_ip] = 0
+        talkers[destination_ip] += value["packet_count"]
+    return talkers
  
  
     
